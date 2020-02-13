@@ -10,7 +10,6 @@ import numpy as np
 from keras import backend as K
 from keras.models import load_model
 from keras.layers import Input
-from PIL import Image, ImageFont, ImageDraw
 
 from yolo3.model import yolo_eval, yolo_body, tiny_yolo_body
 from yolo3.utils import letterbox_image
@@ -114,15 +113,10 @@ class BoxDetector(object):
                 self.input_image_shape: [image.size[1], image.size[0]],
                 K.learning_phase(): 0
             })
-
-        font = ImageFont.truetype(font='font/FiraMono-Medium.otf',
-                    size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
-        thickness = (image.size[0] + image.size[1]) // 300
         
         boxes = np.empty((len(out_classes), 4), dtype=int)
         scores = np.empty((len(out_classes)), dtype=np.float32)
         for i, c in reversed(list(enumerate(out_classes))):
-            predicted_class = self.class_names[c]
             box = out_boxes[i]
             score = out_scores[i]
 
