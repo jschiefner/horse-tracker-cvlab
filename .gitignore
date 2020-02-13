@@ -3,7 +3,12 @@ __pycache__
 *.py[cod]
 *$py.class
 out
-weights
+
+# sachen die hinzugefuegt werden müssen
+
 yolov3.weights
 yolov3-tiny.weights
-model_data
+model_data/
+logs/
+bottlenecks.npz
+goturn.caffemodel
