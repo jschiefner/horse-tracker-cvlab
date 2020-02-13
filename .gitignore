@@ -1,0 +1,9 @@
+data
+__pycache__
+*.py[cod]
+*$py.class
+out
+weights
+yolov3.weights
+yolov3-tiny.weights
+model_data
