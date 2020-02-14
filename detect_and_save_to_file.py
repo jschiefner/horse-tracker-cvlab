@@ -11,7 +11,6 @@ _, folder_path = sys.argv
 # %% imports
 
 import cv2
-import numpy as np
 from PIL import Image
 from glob import glob
 import os
