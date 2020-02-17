@@ -7,7 +7,7 @@
    - python-opencv
  - Python (3.6.9)
    - tensorflow (1.6.0)
-   - keras (2.5.1)
+   - keras (2.5.1) ==> 2.1.5
    - numpy
    - imutils
    - opencv-python
