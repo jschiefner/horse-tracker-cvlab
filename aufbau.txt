@@ -1,0 +1,20 @@
+cropper
+
+smoother
+-takes x,y,h and gives back smoothed versions of them
+
+reader
+-read
+-skipframes
+
+detector
+-uses box detector
+-gives back box
+
+tracker
+
+writer
+
+horsinaround
+- main
+- argparse
