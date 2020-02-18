@@ -11,11 +11,19 @@ class Cropper():
     def crop(self, frame, x, y, h):
         crop_h = int(h*self.zoom)
         crop_w = int(crop_h*self.ratio)
-        max_h, max_w,_ = frame.shape
+        # TODO get maximalste groeßte bei vorgegebenen ratio
+        max_h, max_w, _ = frame.shape
+        if max_h*self.ratio>max_w:
+            max_h = int(max_w / self.ratio)
+        else:
+            max_w = int(max_h * self.ratio)
+
+
         if crop_h>max_h:
-            crop_h=max_h-1
+            crop_h=max_h
         if crop_w>max_w:
-            crop_w=max_w-1
+            crop_w=max_w
+
         #print("crop h",crop_h)
 
         left = int(x - crop_w / 2)

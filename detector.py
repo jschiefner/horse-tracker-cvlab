@@ -20,13 +20,15 @@ class Detector():
         if len(boxes) == 0:
             return False, None, frame
 
+        #print(scores,boxes)
+
         if self.draw==True:
             for box in boxes:
                 left, top, right, bottom = box
                 if self.draw:
                     cv2.rectangle(frame, (left, top), (right, bottom), (0,0,255), 1)
 
-        return True, boxes, frame
+        return True, boxes[0], frame
 
 
 
