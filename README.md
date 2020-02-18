@@ -1,8 +1,13 @@
 # Lab course Horse detection
+Copy logs & model_data folders
 
-run horsinaround.py 
+### Usage
+run horsinaround.py infile outfile skipframes takeframes 
+
 
 ### Dependencies
+
+
 
  - Global
    - libopencv-dev
