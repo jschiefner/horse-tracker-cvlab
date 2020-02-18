@@ -3,12 +3,13 @@ import numpy as np
 
 
 class Cropper():
-    def __init__(self):
-        self.ratio = 720./480.
+    def __init__(self,ratio=1.5, zoom=2):
+        self.ratio = ratio
+        self.zoom = zoom
 
 
     def crop(self, frame, x, y, h):
-        crop_h = int(h*1.5)
+        crop_h = int(h*self.zoom)
         crop_w = int(crop_h*self.ratio)
         max_h, max_w,_ = frame.shape
         if crop_h>max_h:
@@ -48,9 +49,10 @@ class Cropper():
 
         #
         cutout = frame[top:bottom, left:right]
-        print("lrtb", left, right, top, bottom)
-        print("cutout size:",cutout.shape[0:2])
-        print("crop_h_w",crop_h,crop_w)
+        if False:
+            print("lrtb", left, right, top, bottom)
+            print("cutout size:",cutout.shape[0:2])
+            print("crop_h_w",crop_h,crop_w)
         assert (cutout.shape[0:2] == (crop_h, crop_w))
 
         return cutout

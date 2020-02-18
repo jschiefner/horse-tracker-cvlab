@@ -12,7 +12,7 @@ class Smoother():
         # todo initialize to better values
         self.xfilter.x = np.array([[initx], [0.]])
         self.xfilter.F = np.array([[1., 1.], [0., 1.]])
-        self.xfilter.H = np.array([[1., 0.1]])
+        self.xfilter.H = np.array([[1., 0.0]])
         self.xfilter.P *= 10 ** 4
         self.xfilter.R = 50.0
         self.xfilter.Q = Q_discrete_white_noise(2, 1.0, 1.0)
@@ -35,7 +35,7 @@ class Smoother():
         self.hfilter.R = 50.0
         self.hfilter.Q = Q_discrete_white_noise(2, 1.0, 1.0)
 
-        self.fls = FixedLagSmoother(dim_x=2, dim_z=1, N=10)
+        self.fls = FixedLagSmoother(dim_x=2, dim_z=1, N=50)
 
         self.fls.x = np.array([[inith],[.5]])
         self.fls.F = np.array([[1., 1.],[0., 1.]])
@@ -54,9 +54,9 @@ class Smoother():
         #self.hfilter.update(h)
         #self.fls.predict()
         self.fls.smooth(h)
-        print("xsmooth",self.fls.xSmooth)
-        print(self.fls.xSmooth[-1])
-
+        #print("xsmooth",self.fls.xSmooth)
+        #print(self.fls.xSmooth[-1])
+        # wenn xsmooth zu lang kurzen
         return self.xfilter.x[0], self.yfilter.x[0], self.fls.xSmooth[-1][0][0]
 
 

@@ -56,6 +56,10 @@ for x in range(framestowrite):
         if midy<0: midy*=-1
         midx,midy,height = smoother.update(midx,midy,height)
 
+        # tracker
+        # TODO init tracker
+        #tracker = cv2.TrackerGOTURN_create()
+
     cutout = cropper.crop(orig_frame,midx,midy,height)
     if show: cv2.imshow("cutout",cutout)
     writer.write(cutout)
