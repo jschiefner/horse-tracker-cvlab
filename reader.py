@@ -52,4 +52,4 @@ class Reader():
 
     def __del__(self):
         self.cap.release()
-        cv2.destroyAllWindows()
+        # cv2.destroyAllWindows()
