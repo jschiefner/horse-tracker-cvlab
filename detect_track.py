@@ -96,7 +96,7 @@ class VideoMaker():
         else:
             left, top, right, bottom = boxes[0]
             if self.draw: cv2.rectangle(frame, (left, top), (right, bottom), (0,0,255), 10) # replace self.draw with draw
-            self.tracker = cv2.TrackerGOTURN_create()
+            self.tracker = cv2.TrackerCSRT_create()
             bbox = (left, top, right-left, bottom-top)
             ret = self.tracker.init(frame, bbox)
             return ret, (left, top, right, bottom)
@@ -129,6 +129,7 @@ class VideoMaker():
         while frame_number < frames:
             ret, frame = self.cap.read()
             if ret:
+                cv2.imshow("frame", frame)
                 if self.tracker is None or frame_number % interval == 0:
                     ret, box = self.detect(frame)
                     if not ret:
@@ -141,6 +142,7 @@ class VideoMaker():
                 try:
                     frame = self.crop_and_resize(frame, box)
                     self.out.write(frame)
+
                     frame_number += 1
                 except:
                     print('resize error')
