@@ -2,3 +2,5 @@ data
 model_data
 logs
 yolo3
+bottlenecks.npz
+goturn.caffemodel

@@ -32,6 +32,7 @@ RUN pip3 install cvutils
 RUN pip3 install cvlib
 RUN pip3 install opencv-contrib-python==4.0.0.21
 RUN pip3 install progress
+RUN pip3 install filterpy
 ENV JUPYTER_TOKEN=d1aaa6e17d1498140034d348d85cafb964193a4fb806ab648f53f8401e6a62979896915d73afc8e2bfcd9b4e984243765341acef30de9e478b83c1a2895e6406
 
 EXPOSE 8888

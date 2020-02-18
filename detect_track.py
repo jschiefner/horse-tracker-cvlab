@@ -12,17 +12,10 @@ with warnings.catch_warnings():
     warnings.simplefilter('ignore')
     from box_detector import BoxDetector
     box_detector = BoxDetector()
+from kalman import Kalman2D
 
 # %% class
 
-break_back = 200
-break_front = 500
-back_height = 580
-middle_height = 830
-front_height = 1550
-back_y = 1140
-middle_y = 1180
-front_y = 1300
 frame_width = 3840
 frame_height = 2160
 ratio = frame_width / frame_height
@@ -31,62 +24,12 @@ class VideoMaker():
     def __init__(self, cap, out):
         self.cap = cap
         self.out = out
-        self.old_zoom = None
         self.tracker = None
-        self.zoom_history = None
-        self.draw = draw # remove
-
-    def shift_zoom_history(self, new):
-        if self.zoom_history is None:
-            self.old_zoom = new
-            self.zoom_history = np.full(20, new, dtype=int)
-        self.zoom_history[:-1] = self.zoom_history[1:]
-        self.zoom_history[-1] = new
-
-    def determine_zoom(self, new_zoom):
-        unique = np.unique(self.zoom_history)
-        if unique.size == 1:
-            return new_zoom
-        else:
-            return self.old_zoom
-
-    def crop_and_resize(self, frame, box):
-        left, top, right, bottom = box
-        x = left + (right-left) // 2
-        height = bottom - top
-        
-        if height <= break_back: new_zoom = 0
-        elif height <= break_front: new_zoom = 1
-        else: new_zoom = 2
-        
-        self.shift_zoom_history(new_zoom)
-        new_zoom = self.determine_zoom(new_zoom)
-            
-        if new_zoom == 0:
-            top = back_y - back_height // 2
-            bottom = back_y + back_height // 2
-            width = back_height * ratio
-            left = x - int(width // 2)
-            right = x + int(width // 2)
-        elif new_zoom == 1:
-            top = middle_y - middle_height // 2
-            bottom = middle_y + middle_height // 2
-            width = middle_height * ratio
-            left = x - int(width // 2)
-            right = x + int(width // 2)
-        elif new_zoom == 2:
-            top = front_y - front_height // 2
-            bottom = front_y + front_height // 2
-            width = front_height * ratio
-            left = x - int(width // 2)
-            right = x + int(width // 2)
-        else:
-            raise RuntimeError('zoom factor {} not supported'.format(new_zoom))
-
-        cropped = frame[top:bottom, left:right]
-        resized = cv2.resize(cropped, (frame_width, frame_height))
-        self.old_zoom = new_zoom
-        return resized
+        self.smooth = None
+        self.kalman = None
+        self.kalman2d = None
+        self.height_history = None
+        self.tracked = 0
         
     def detect(self, frame):
         image = Image.fromarray(frame)
@@ -95,22 +38,56 @@ class VideoMaker():
             return False, None
         else:
             left, top, right, bottom = boxes[0]
-            if self.draw: cv2.rectangle(frame, (left, top), (right, bottom), (0,0,255), 10) # replace self.draw with draw
-            self.tracker = cv2.TrackerCSRT_create()
-            bbox = (left, top, right-left, bottom-top)
-            ret = self.tracker.init(frame, bbox)
+            if draw: cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+            
+            self.tracker = cv2.TrackerGOTURN_create()
+            box = (left, top, right-left, bottom-top)
+            ret = self.tracker.init(frame, box)
             return ret, (left, top, right, bottom)
             
     def track(self, frame):
-        ret, bbox = self.tracker.update(frame)
+        self.tracked += 1
+        ret, box = self.tracker.update(frame)
         if ret:
-            left, top = (int(bbox[0]), int(bbox[1]))
-            right, bottom = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-            if self.draw: cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 10) # replace self.draw with draw
+            left, top = (int(box[0]), int(box[1]))
+            right, bottom = (int(box[0] + box[2]), int(box[1] + box[3]))
+            if draw: cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
             return (left, top, right, bottom)
         else:
             raise RuntimeError('tracker error!')
             
+    def calculate_height(self, box):
+        _, top, _, bottom = box
+        new = bottom - top
+        if self.height_history is None:
+            self.height_history = np.full(50, new, dtype=int)
+        self.height_history[:-1] = self.height_history[1:]
+        self.height_history[-1] = new
+        return int(np.mean(self.height_history))
+        
+    def zoom(self, frame, center, height):
+        height = height + 300 # todo: better value!
+        width = height * ratio
+        x, y = int(center[0]), int(center[1])
+        dist_x = int(width // 2)
+        dist_y = int(height // 2)
+        left = x - dist_x; right = x + dist_x
+        top = y - dist_y; bottom = y + dist_y
+        # todo: make this more efficient (np.clip)
+        if left < 0: left = 0
+        if right < 0: right = 0
+        if bottom < 0: bottom = 0
+        if top < 0: top = 0
+        cropped = frame[top:bottom, left:right]
+        resized = cv2.resize(cropped, (frame_width, frame_height))
+        return resized
+            
+    def draw_fixed(self, frame, center, height, color='red'):
+        x, y = int(center[0]), int(center[1])
+        color = {'red': (0, 0, 255), 'blue': (255, 0, 0), 'green': (0, 255, 0)}[color]
+        half_height = height // 2
+        cv2.rectangle(frame, (x-half_height,y-half_height), (x+half_height,y+half_height), color, 5)
+    
     def create(self):
         if skip > 0:
             spinner = Spinner('Skipping {} Frames... '.format(skip))
@@ -125,45 +102,42 @@ class VideoMaker():
         frame_number = 0
         tracker_errors = 0
         bar = Bar('Processing frames', max=frames)
-        drawchange = 1 # remove
         while frame_number < frames:
             ret, frame = self.cap.read()
             if ret:
-                cv2.imshow("frame", frame)
-                if self.tracker is None or frame_number % interval == 0:
+                if frame_number % 10 == 0: print('')
+                print(f'{frame_number+1}/{frames} ', end='')
+                if self.tracker is None:
                     ret, box = self.detect(frame)
+                    if frame_number == 0: self.kalman2d = Kalman2D(box)
                     if not ret:
                         if self.tracker is None:
                             print('skipped frame {} because the tracker could not be initialized'.format(frame_number))
+                            frame_number += 1
                             continue
-                        box = self.track(frame)
+                        box = self.track(frame)    
                 else:
                     box = self.track(frame)
-                try:
-                    frame = self.crop_and_resize(frame, box)
-                    self.out.write(frame)
-
-                    frame_number += 1
-                except:
-                    print('resize error')
-                # alternate drawing # remove
-                if (frame_number // 200) == drawchange:
-                    self.draw = not self.draw
-                    drawchange += 1 
-                # alternate drawing end # remove
+                x,y = self.kalman2d.predict()
+                height = self.calculate_height(box)
+                self.kalman2d.correct(box)
+                frame = self.zoom(frame, (x,y), height)
+                self.out.write(frame)
+                frame_number += 1
                 bar.next()
             
         # cleanup
         self.cap.release()
         self.out.release()
         bar.finish()
+        print(f'\nTracked {self.tracked} frames')
         print('Result saved to \033[92m{}\033[00m'.format(output))
-
+        
 # %% action
 
-if len(sys.argv) != 7: raise RuntimeError('Programm needs 6 arguments to run: file, output, skip, frames, interval, draw got {} argument(s).'.format(len(sys.argv)-1))
-_, file, output, skip, frames, interval, draw = sys.argv
-# file, output, skip, frames, interval, draw = 'GP028294.MP4', 'output.avi', '650', '150', '15', 'false'
+# if len(sys.argv) != 7: raise RuntimeError('Programm needs 6 arguments to run: file, output, skip, frames, interval, draw got {} argument(s).'.format(len(sys.argv)-1))
+# _, file, output, skip, frames, interval, draw = sys.argv
+file, output, skip, frames, interval, draw = 'data/videos/GP028294.MP4', 'out/kalman6.avi', '240', '250', '1', 'f'
 
 skip = int(skip)
 frames = int(frames)
@@ -172,12 +146,16 @@ draw = draw == 'True' or draw == 'true' or draw == 't'
 print('Arguments: file: {}, output: {}, skip: {}, frames: {}, interval: {}, draw: {}'.format(file, output, skip, frames, interval, draw))
 
 cap = cv2.VideoCapture(file)
-if (cap.isOpened() == False): 
+if (cap.isOpened() == False):
     print('Unable to read video feed')
     exit(1)
     
 fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
-out = cv2.VideoWriter(output, fourcc, 25, (frame_width,frame_height))
-
-maker = VideoMaker(cap, out)
-maker.create()
+out = cv2.VideoWriter(output, fourcc, 25, (frame_width, frame_height))
+try:
+    maker = VideoMaker(cap, out)
+    maker.create()
+except KeyboardInterrupt:
+    print(f'\nInterrupted. Closing both files and saving result to \033[92m{output}\033[00m, tracked {maker.tracked} frames')
+    cap.release()
+    out.release()
