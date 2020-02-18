@@ -12,7 +12,7 @@ class Horse():
         self.tracker = None
         self.kalman2d = None
         self.height_history = None
-        self.direction_history = np.zeros(25, dtype=np.float32)
+        self.direction_history = np.zeros(5, dtype=np.float32)
         self.tracked = 0
         if color is None:
             self.color = (0, random.randint(0,255), random.randint(0,255))
@@ -23,22 +23,28 @@ class Horse():
         Horse.horse_number += 1
         
     def start_tracker(self, frame):
-        self.tracker = cv2.TrackerGOTURN_create()
+        # self.tracker = cv2.TrackerGOTURN_create()
+        self.tracker = cv2.TrackerCSRT_create()
         left, top, right, bottom = self.box
         self.tracker.init(frame, (left, top, right-left, bottom-top))
         
     def track(self, frame):
-        if self.tracker is None: return
+        print(f'track horse {self.number}')
         _, box = self.tracker.update(frame)
-        self.update_direction(box)
         left, top = (int(box[0]), int(box[1]))
         right, bottom = (int(box[0] + box[2]), int(box[1] + box[3]))
-        self.box = left, top, right, bottom
+        box = left, top, right, bottom
+        self.update_direction(box)
+        self.box = box
+        
+    def tracking(self):
+        return self.tracker is not None
         
     def update_direction(self, box):
         new_x, _ = self.center(box)
         old_x, _ = self.center()
         movement = new_x - old_x
+        print(new_x, old_x, movement)
         self.direction_history[:-1] = self.direction_history[1:]
         self.direction_history[-1] = movement
         
@@ -52,10 +58,13 @@ class Horse():
     def offset(self, box):
         horse_x, _ = self.center()
         box_x, _ = self.center(box)
-        if horse_x - box_x > 0:
+        if box_x - horse_x > 0:
             return 1
         else:
             return -1
+            
+    def mean_direction(self):
+        return np.mean(self.direction_history)
         
     def center(self, box=None):
         if box is None: box = self.box
@@ -65,6 +74,7 @@ class Horse():
         return (x,y)
         
     def detected(self, box):
+        print(f'detected horse {self.number}')
         self.update_direction(box)
         x_old, _ = self.center()
         x_new, _ = self.center(box)
@@ -94,6 +104,9 @@ class Horse():
     def allowed_distance(self):
         factor = 50
         return self.last_detected * factor + factor
+        
+    def gone(self):
+        return self.last_detected >= 100
         
     def draw(self, frame):
         left, top, right, bottom = self.box
