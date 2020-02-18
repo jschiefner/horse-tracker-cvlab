@@ -1,5 +1,7 @@
 # Lab course Horse detection
 
+run horsinaround.py 
+
 ### Dependencies
 
  - Global
@@ -17,3 +19,6 @@
    - cvutils
    - opencv-contrib-python (4.0.0.21)
    - progress
+   - filterpy
+   
+   
