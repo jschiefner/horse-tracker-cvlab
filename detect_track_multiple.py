@@ -33,23 +33,53 @@ logger.setLevel(logging.INFO)
 
 distance_threshold = 300
 
-def optimal(horse, detected):
+# def optimal(horse, detected):
+#     optimal_index = None
+#     optimal_distance = np.inf
+#     horse_direction = horse.direction()
+#     for index, box in enumerate(detected):
+#         distance = horse.distance(box)
+#         direction = horse.offset(box)
+#         mean_direction = horse.mean_direction()
+#         switch = 5
+#         logger.info(['eq dir:', direction, horse_direction, direction == horse_direction])
+#         logger.info(['mean', mean_direction, mean_direction > -switch and mean_direction < switch])
+#         logger.info(horse.movement_history)
+#         logger.info(['distance', distance, optimal_distance, distance < optimal_distance])
+#         if (direction == horse_direction or (mean_direction > -switch and mean_direction < switch) or distance <= distance_threshold) and distance < optimal_distance:
+#             optimal_distance = distance
+#             optimal_index = index
+#     return optimal_index, optimal_distance
+
+def find_closest_horse(horses, box):
+    distance = np.inf
     optimal_index = None
-    optimal_distance = np.inf
-    horse_direction = horse.direction()
-    for index, box in enumerate(detected):
-        distance = horse.distance(box)
-        direction = horse.offset(box)
-        mean_direction = horse.mean_direction()
-        switch = 5
-        logger.info(['eq dir:', direction, horse_direction, direction == horse_direction])
-        logger.info(['mean', mean_direction, mean_direction > -switch and mean_direction < switch])
-        logger.info(horse.movement_history)
-        logger.info(['distance', distance, optimal_distance, distance < optimal_distance])
-        if (direction == horse_direction or (mean_direction > -switch and mean_direction < switch) or distance <= distance_threshold) and distance < optimal_distance:
-            optimal_distance = distance
+    for index, horse in enumerate(horses):
+        box_distance = horse.distance(box)
+        if box_distance < distance:
+            distance = box_distance
             optimal_index = index
-    return optimal_index, optimal_distance
+    if optimal_index is None:
+        logger.info('no optimal index found')
+        return None
+    horse = horses[optimal_index]
+    if distance >= horse.allowed_distance():
+        logger.info(f'allowed distance was not high enough ({distance}, {horse.allowed_distance()})')
+        return None
+    direction = horse.offset(box)
+    horse_direction = horse.direction()
+    if direction != horse_direction and distance >= distance_threshold:
+        logger.info(f'direction was wrong (box: {direction}, horse: {horse_direction}) and distance was too big ({distance}/{distance_threshold})')
+        return None
+    logger.info(f'horse {horse.number} made it through')
+    return horse
+    
+def list_diff(list1, list2):
+    out = []
+    for ele in list1:
+        if not ele in list2:
+            out.append(ele)
+    return out
 
 # class
 class Manager():
@@ -57,10 +87,11 @@ class Manager():
         self.video = VideoManager(input, output, max_frames, skip)
         self.horses = np.array([], dtype=Horse)
         
-    def addHorse(self, box):
+    def spawnHorse(self, box):
         horse = Horse(box)
         logger.info(f'spawn horse {horse.number}')
         self.horses = np.append(self.horses, horse)
+        return horse
         
     def removeHorse(self, horse):
         logger.info(f'remove horse {horse.number}')
@@ -73,28 +104,47 @@ class Manager():
         relevant_boxes = []
         for index in range(len(boxes)):
             # todo: find appropriate value for low score
-            if scores[index] > 0.5: relevant_boxes.append(boxes[index])
+            if scores[index] > 0.3: relevant_boxes.append(boxes[index])
         return np.array(relevant_boxes)
         
+    # def match(self, frame, detected):
+    #     for horse in self.horses:
+    #         if len(detected) > 0:
+    #             index, distance = optimal(horse, detected)
+    #             logger.info(f'horse {horse.number} optimal index: {index}, distance: {distance}, allowed_distance: {horse.allowed_distance()}, last_detected: {horse.last_detected}')
+    #             if (index is not None) and distance <= horse.allowed_distance():
+    #                 min_box = detected[index]
+    #                 horse.detect(min_box)
+    #                 detected = np.delete(detected, index, axis=0)
+    #             else:
+    #                 horse.track(frame)
+    #         else:
+    #             horse.track(frame)
+    #     for box in detected:
+    #         intersects = False
+    #         for horse in self.horses:
+    #             if horse.intersect(box): intersects = True
+    #         if not intersects:
+    #             self.spawnHorse(box)
+                
     def match(self, frame, detected):
-        for horse in self.horses:
-            if len(detected) > 0:
-                index, distance = optimal(horse, detected)
-                logger.info(f'horse {horse.number} optimal index: {index}, distance: {distance}, allowed_distance: {horse.allowed_distance()}, last_detected: {horse.last_detected}')
-                if (index is not None) and distance <= horse.allowed_distance():
-                    min_box = detected[index]
-                    horse.detect(min_box)
-                    detected = np.delete(detected, index, axis=0)
-                else:
-                    horse.track(frame)
-            else:
-                horse.track(frame)
-        for box in detected:
+        detected_horses = []
+        for index, box in enumerate(detected):
             intersects = False
-            for horse in self.horses:
+            for horse in detected_horses:
                 if horse.intersect(box): intersects = True
-            if not intersects:
-                self.addHorse(box)
+            if intersects: continue
+            lone_horses = list_diff(self.horses, detected_horses)
+            horse = find_closest_horse(lone_horses, box)
+            if horse is None:
+                horse = self.spawnHorse(box)
+                detected_horses.append(horse)
+            else:
+                horse.detect(box)
+            detected_horses.append(horse)
+        lone_horses = list_diff(self.horses, detected_horses)
+        for horse in lone_horses:
+            horse.track(frame)
             
     def initialize(self):
         frame = self.video.read()
@@ -102,11 +152,13 @@ class Manager():
         self.match(frame, detected)
         for horse in self.horses:
             horse.draw(frame)
+            horse.frame = frame
         self.video.write(frame)
         
     def update(self):
         frame = self.video.read()
         for horse in self.horses:
+            horse.updated = False
             horse.last_detected += 1
         detected = self.detect(frame)
         self.match(frame, detected)
@@ -120,7 +172,7 @@ class Manager():
     
 # %% action
 # skip = 13*23
-input_file = 'data/videos/GP038291.MP4'; skip = 8*23 + 37
+input_file = 'data/videos/GP038291.MP4'; skip = 8*23 + 50
 # input_file = 'data/videos/Nachlieferung/Handorf/ZOOM0004_0.MP4'; skip = (7*60+13)*23
 # input_file = 'data/videos/Nachlieferung/Kirchhellen/ZOOM0001_1.MP4'; skip = 0
 # input_file = 'data/videos/Nachlieferung/Handorf/ZOOM0004_0.MP4'

@@ -35,25 +35,58 @@ class Horse():
         self.tracker = None
         self.kalman2d = None
         self.height_history = None
-        self.movement_history = np.zeros(10, dtype=np.float32)
-        self.tracked = 0
+        self.movement_history = np.zeros(10, dtype=np.float64)
         self.status = 'detected'
+        self.updated = True
         x, y = center(self.box)
         self.smoother = Smoother(x, y, self.height())
         self.number = Horse.horse_number
         Horse.horse_number += 1
+        self.frame = None
+        self.mean_movement = 0
                 
     def track(self, frame):
-        self.tracker = cv2.TrackerGOTURN_create()
-        # self.tracker = cv2.TrackerCSRT_create()
-        left, top, right, bottom = self.box
-        self.tracker.init(frame, (left, top, right-left, bottom-top))
-        self.status = 'tracked'
+        if self.tracker is None:
+            self.tracker = cv2.TrackerGOTURN_create()
+        if self.status != 'smoothed':
+            left, top, right, bottom = self.box
+            self.tracker.init(frame, (left, top, right-left, bottom-top))
+            self.status = 'tracked'
         
     def update(self, frame, horses):
+        logger.info(f'### update horse {self.number} {self.status}')
+        try_tracking = False
         if self.detected():
+            self.status = 'detected'
             logger.info(f'detected horse {self.number}')
-        elif self.tracking():
+        elif self.status == 'smoothed':
+            intersects = False
+            for horse in horses:
+                if horse == self: continue
+                if horse.intersect_fixed(self.box) and not horse.updated and horse.status != 'smoothed':
+                    intersects = True
+                    logger.info(f'smoothed horse {self.number} intersects with horse {horse.number}')
+                logger.info([f'smooth {self.number}:', horse.intersect_fixed(self.box), horse.updated, horse.status != 'smoothed', intersects])
+            if intersects:
+                logger.info(f'smoothed horse {self.number}')
+                logger.info(f'movement of horse {self.number}: {self.movement_history}')
+                self.status = 'smoothed'
+                left, top, right, bottom = self.box
+                left += self.mean_movement; right += self.mean_movement
+                logger.info(f'add {self.mean_movement} onto left and right of horse {self.number}')
+                box = left, top, right, bottom
+                x, y = center(box)
+                box = fixed_box(x, y, self.height())
+                self.update_direction(box)
+                self.box = box
+                left, top, right, bottom = box
+                self.tracker.init(frame, (left, top, right-left, bottom-top))
+            else:
+                logger.info(f'horse {self.number} will try to track')
+                left, top, right, bottom = self.box
+                self.tracker.init(frame, (left, top, right-left, bottom-top))
+                try_tracking = True
+        if self.status == 'tracked' or try_tracking:
             _, box = self.tracker.update(frame)
             left, top = (int(box[0]), int(box[1]))
             right, bottom = (int(box[0] + box[2]), int(box[1] + box[3]))
@@ -61,22 +94,28 @@ class Horse():
             intersects = False
             for horse in horses:
                 if horse == self: continue
-                if horse.intersect(horse.box):
-                    intersects = True
-                    logger.info(f'tracker of horse {self.number} intersects with horse {horse.number}')
+                logger.info(f'trytracking: {try_tracking}')
+                if try_tracking:
+                    if horse.intersect(box) and not horse.updated and horse.status != 'smoothed':
+                        logger.info(f'tracker of horse {self.number} intersects with horse {horse.number}')
+                        intersects = True
+                    logger.info([f'trytrack {self.number}:', horse.intersect(self.box), not horse.updated, horse.status != 'smoothed', intersects])
+                else:
+                    if horse.intersect_fixed(box) and not horse.updated and horse.status != 'smoothed':
+                        logger.info(f'tracker of horse {self.number} intersects_fixed with horse {horse.number}')
+                        intersects = True
+                    logger.info([f'trytrack {self.number}:', horse.intersect_fixed(self.box), not horse.updated, horse.status != 'smoothed', intersects])
             if intersects:
-                logger.info(f'smoothed horse {self.number}')
+                logger.info('intersects')
                 self.status = 'smoothed'
-                x, y, height = self.smoother.predict(self.height())
-                self.box = fixed_box(x, y, height)
             else:
                 logger.info(f'tracked horse {self.number}')
-                self.update_direction(box)
-                self.box = box
                 self.status = 'tracked'
+                self.box = box
         x, y = center(self.box)
         x, y, height = self.smoother.update(x, y, self.height())
         self.smooth_box = fixed_box(x, y, height)
+        self.updated = True
                 
     def tracking(self):
         return self.tracker is not None
@@ -103,12 +142,12 @@ class Horse():
             return -1
             
     def mean_direction(self):
-        return np.median(self.movement_history)
+        return np.mean(self.movement_history)
         
     def detect(self, box):
         self.update_direction(box)
-        x_old, _ = center(self.box)
-        x_new, _ = center(box)
+        self.mean_movement = self.mean_direction()
+        self.status = 'detected'
         self.last_detected = 0
         self.tracker = None
         self.box = box
@@ -117,8 +156,16 @@ class Horse():
         return self.tracker is None
         
     def intersect(self, box):
-        logger.info([self.box, box])
         l1, t1, r1, b1 = self.box
+        l2, t2, r2, b2 = box
+        if l1 > r2 or l2 > r1:
+            return False
+        if t1 > b2 or t2 > b1:
+            return False
+        return True
+        
+    def intersect_fixed(self, box):
+        l1, t1, r1, b1 = self.smooth_box
         l2, t2, r2, b2 = box
         if l1 > r2 or l2 > r1:
             return False
