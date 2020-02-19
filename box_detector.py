@@ -20,7 +20,7 @@ class BoxDetector(object):
     _defaults = {
         # "model_path": 'model_data/yolo.h5',
         # "model_path": 'logs/000/physics_intermediate2.h5',
-        "model_path": 'logs/000/super_intermediate1.h5',
+        "model_path": 'logs/000/super_intermediate2.h5',
         "anchors_path": 'model_data/yolo_anchors.txt',
         # "classes_path": 'model_data/coco_classes.txt',
         "classes_path": 'model_data/voc_classes_new.txt',
