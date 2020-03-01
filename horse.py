@@ -25,10 +25,8 @@ def fixed_box(x, y, height):
     bottom = y + half_height
     return left, top, right, bottom
     
-class Horse():    
-    horse_number = 1
-    
-    def __init__(self, box):
+class Horse():        
+    def __init__(self, box, number):
         self.box = box
         self.smooth_box = box
         self.last_detected = 0
@@ -40,9 +38,7 @@ class Horse():
         self.updated = True
         x, y = center(self.box)
         self.smoother = Smoother(x, y, self.height())
-        self.number = Horse.horse_number
-        Horse.horse_number += 1
-        self.frame = None
+        self.number = number
         self.mean_movement = 0
                 
     def track(self, frame):
@@ -172,6 +168,9 @@ class Horse():
         if t1 > b2 or t2 > b1:
             return False
         return True
+        
+    def smooth_center(self):
+        return center(self.smooth_box)
 
     def height(self):
         _, top, _, bottom = self.box
@@ -204,3 +203,8 @@ class Horse():
         cv2.putText(frame, str(self.number), (x,y), cv2.FONT_HERSHEY_TRIPLEX, 2, color)
         left, top, right, bottom = self.box
         cv2.rectangle(frame, (left, top), (right, bottom), color, 5)
+        
+    def draw_smooth(self, frame):
+        left, top, right, bottom = self.smooth_box
+        x, y = center(self.smooth_box)
+        cv2.rectangle(frame, (left, top), (right, bottom), green, 5)

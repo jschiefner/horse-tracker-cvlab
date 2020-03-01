@@ -17,6 +17,7 @@ with warnings.catch_warnings():
 from kalman import Kalman2D
 from video_manager import VideoManager
 from horse import Horse
+from timeit import default_timer as timer
 
 frame_width = 3840
 frame_height = 2160
@@ -26,30 +27,13 @@ logger = logging.getLogger('horse')
 handler = logging.FileHandler('out/log.txt', 'a')
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
+global_horse_number = 0
 
 # %% class
 
 # helper functions
 
 distance_threshold = 300
-
-# def optimal(horse, detected):
-#     optimal_index = None
-#     optimal_distance = np.inf
-#     horse_direction = horse.direction()
-#     for index, box in enumerate(detected):
-#         distance = horse.distance(box)
-#         direction = horse.offset(box)
-#         mean_direction = horse.mean_direction()
-#         switch = 5
-#         logger.info(['eq dir:', direction, horse_direction, direction == horse_direction])
-#         logger.info(['mean', mean_direction, mean_direction > -switch and mean_direction < switch])
-#         logger.info(horse.movement_history)
-#         logger.info(['distance', distance, optimal_distance, distance < optimal_distance])
-#         if (direction == horse_direction or (mean_direction > -switch and mean_direction < switch) or distance <= distance_threshold) and distance < optimal_distance:
-#             optimal_distance = distance
-#             optimal_index = index
-#     return optimal_index, optimal_distance
 
 def find_closest_horse(horses, box):
     distance = np.inf
@@ -83,12 +67,14 @@ def list_diff(list1, list2):
 
 # class
 class Manager():
-    def __init__(self, input, output, max_frames=25, skip=0):
-        self.video = VideoManager(input, output, max_frames, skip)
+    def __init__(self, input, output, max_frames=25, skip=0, show=True):
+        self.video = VideoManager(input, output, max_frames, skip, show)
         self.horses = np.array([], dtype=Horse)
         
     def spawnHorse(self, box):
-        horse = Horse(box)
+        global global_horse_number
+        horse = Horse(box, global_horse_number)
+        global_horse_number += 1
         logger.info(f'spawn horse {horse.number}')
         self.horses = np.append(self.horses, horse)
         return horse
@@ -106,26 +92,6 @@ class Manager():
             # todo: find appropriate value for low score
             if scores[index] > 0.3: relevant_boxes.append(boxes[index])
         return np.array(relevant_boxes)
-        
-    # def match(self, frame, detected):
-    #     for horse in self.horses:
-    #         if len(detected) > 0:
-    #             index, distance = optimal(horse, detected)
-    #             logger.info(f'horse {horse.number} optimal index: {index}, distance: {distance}, allowed_distance: {horse.allowed_distance()}, last_detected: {horse.last_detected}')
-    #             if (index is not None) and distance <= horse.allowed_distance():
-    #                 min_box = detected[index]
-    #                 horse.detect(min_box)
-    #                 detected = np.delete(detected, index, axis=0)
-    #             else:
-    #                 horse.track(frame)
-    #         else:
-    #             horse.track(frame)
-    #     for box in detected:
-    #         intersects = False
-    #         for horse in self.horses:
-    #             if horse.intersect(box): intersects = True
-    #         if not intersects:
-    #             self.spawnHorse(box)
                 
     def match(self, frame, detected):
         detected_horses = []
@@ -147,16 +113,20 @@ class Manager():
             horse.track(frame)
             
     def initialize(self):
-        frame = self.video.read()
+        raw = self.video.read()
+        frame = raw.copy()
+        smooth = raw.copy()
         detected = self.detect(frame)
         self.match(frame, detected)
         for horse in self.horses:
             horse.draw(frame)
-            horse.frame = frame
-        self.video.write(frame)
+            horse.draw_smooth(smooth)
+        self.video.write(raw, frame, smooth, self.horses)
         
     def update(self):
-        frame = self.video.read()
+        raw = self.video.read()
+        frame = raw.copy()
+        smooth = raw.copy()
         for horse in self.horses:
             horse.updated = False
             horse.last_detected += 1
@@ -168,22 +138,31 @@ class Manager():
                 continue
             horse.update(frame, self.horses)
             horse.draw(frame)
-        self.video.write(frame)
+            horse.draw_smooth(smooth)
+        self.video.write(raw, frame, smooth, self.horses)
     
 # %% action
 # skip = 13*23
-input_file = 'data/videos/GP038291.MP4'; skip = 8*23 + 50
+input_file = 'data/videos/GP038291.MP4'; out = 'out/two_horses_big'; skip = 0; frames = 60
 # input_file = 'data/videos/Nachlieferung/Handorf/ZOOM0004_0.MP4'; skip = (7*60+13)*23
 # input_file = 'data/videos/Nachlieferung/Kirchhellen/ZOOM0001_1.MP4'; skip = 0
 # input_file = 'data/videos/Nachlieferung/Handorf/ZOOM0004_0.MP4'
 # input_file = 'data/videos/GP028294.MP4'; skip = 32*23 + 51 + 21
-frames = 8*23
-out = f'out/multiple{input()}.avi'
-manager = Manager(input_file, out, max_frames=frames, skip=skip)
+# input_file = 'data/videos/Nachlieferung/Handorf/ZOOM0004_0.mp4'; skip = 3680; frames = 598
+global_horse_number = 0
+# out = 'out/two_horses'
+# _, input_file, out, frames, skip, = sys.argv
+frames = int(frames)
+skip = int(skip)
+manager = Manager(input_file, out, max_frames=frames, skip=skip, show=True)
 manager.initialize()
+start = timer()
 for i in range(frames-1):
     try:
         manager.update()
     except KeyboardInterrupt:
         break
+end = timer()
+elapsed_seconds = end-start; elapsed_minutes = elapsed_seconds / 60
+logger.info(f'time elapsed: \033[92m{elapsed_seconds}\033[00m seconds => \033[92m{elapsed_minutes}\033[00m minutes.')
 manager.video.close()
