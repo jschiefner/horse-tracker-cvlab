@@ -8,7 +8,7 @@ from writer import Writer
 from progress.bar import Bar
 
 if len(sys.argv)<=1:
-    print("Usage: horsinaround.py inputfile outfile skipframes=0 framestowrite")
+    print("Usage: horsinaround.py inputfile outfile skipframes=0 framestowrite modvalue")
     exit(0)
 
 filename = sys.argv[1]
@@ -17,12 +17,15 @@ framestowrite = int(sys.argv[4])
 
 show = False
 
+modvalue = int(sys.argv[5])
+
 
 
 reader = Reader(filename=filename)
 reader.skipFrames(skip)
 print("fps:",reader.getFPS())
 height = reader.getHeight()
+framewidth = reader.getWidth()
 midx = int(reader.getWidth()/2.)
 midy = int(height/2.)
 
@@ -36,41 +39,49 @@ smoother = Smoother(initx=midx,inity=midy,inith=height)
 bar = Bar('Processing frames', max=framestowrite)
 hhh = []
 
-failedlasttime=False
+failedcounter=0
+
 for x in range(framestowrite):
     bar.next()
     frame = reader.read()
     orig_frame = frame.copy()
-    if failedlasttime or x%6==0:
-        success, box, frame = detector.detect(frame)
-        if success:
-            failedlasttime = False
-            # only 1 horse at a time
 
-            left, top, right, bottom = box
-            height = bottom - top
-            midx = left + (right - left) / 2
-            midy = top + height / 2
-            if height < 0: height *= -1
-            hhh.append(height)
-            if midx < 0: midx *= -1
-            if midy < 0: midy *= -1
-            midx, midy, height = smoother.update(midx, midy, height)
+    if failedcounter>0 or x%modvalue==0:
+        if failedcounter<3 or failedcounter%10==0:
+            success, box, frame = detector.detect(frame)
+            if success:
+                failedcounter = 0
+                # only 1 horse at a time
 
-            # tracker
-            # TODO init tracker
-            initBB = (left, top, right - left, bottom - top)
-            #print(initBB)
-            tracker = cv2.TrackerCSRT_create()
-            #tracker = cv2.TrackerGOTURN_create()
-            tracker.init(orig_frame, initBB)
-        else:
-            failedlasttime=True
+                left, top, right, bottom = box
+
+
+                height = bottom - top
+                midx = left + (right - left) / 2
+                midy = top + height / 2
+                if height < 0: height *= -1
+                hhh.append(height)
+                if midx < 0: midx *= -1
+                if midy < 0: midy *= -1
+                midx, midy, height = smoother.update(midx, midy, height)
+
+                # tracker
+                # TODO init tracker
+                initBB = (left, top, right - left, bottom - top)
+                #print(initBB)
+                tracker = cv2.TrackerCSRT_create()
+                #tracker = None
+                #tracker = cv2.TrackerGOTURN_create()
+                tracker.init(orig_frame, initBB)
+            else:
+                failedcounter+=1
+        else: #failcounter >=3 oder nicht %10==0
+            failedcounter+=1
     else:
         success, box = tracker.update(orig_frame)
         #print(box)
         if success:
-            failedlasttime = False
+            failedcounter=0
             # only 1 horse at a time
 
             left, top, width, height = box
@@ -85,7 +96,7 @@ for x in range(framestowrite):
             if midy < 0: midy *= -1
             midx, midy, height = smoother.update(midx, midy, height)
         else:
-            failedlasttime = True
+            failedcounter+=1
 
 
 
@@ -99,6 +110,7 @@ for x in range(framestowrite):
     if show:
         key= cv2.waitKey(1) & 0xFF
         if key==ord("q"):
+            writer.save()
             break
         elif key==ord("s"):
             reader.skipFrames(reader.getFPS())
