@@ -51,6 +51,6 @@ class Smoother():
         self.fls.smooth(h)
         # wenn xsmooth zu lang kurzen
         #return self.xfilter.x[0], self.yfilter.x[0], self.fls.xSmooth[-1][0][0]
-        return self.xfilter.xSmooth[-1][0][0], self.yfilter.xSmooth[-1][0][0], self.fls.xSmooth[-1][0][0]
+        return int(round(self.xfilter.xSmooth[-1][0][0])), int(round(self.yfilter.xSmooth[-1][0][0])), int(round(self.fls.xSmooth[-1][0][0]))
 
 

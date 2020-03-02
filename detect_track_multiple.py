@@ -143,7 +143,7 @@ class Manager():
     
 # %% action
 # skip = 13*23
-input_file = 'data/videos/GP038291.MP4'; out = 'out/two_horses_big'; skip = 0; frames = 60
+input_file = 'data/videos/GP038291.MP4'; out = 'out/two_horses_big'; skip = 0; frames = 120
 # input_file = 'data/videos/Nachlieferung/Handorf/ZOOM0004_0.MP4'; skip = (7*60+13)*23
 # input_file = 'data/videos/Nachlieferung/Kirchhellen/ZOOM0001_1.MP4'; skip = 0
 # input_file = 'data/videos/Nachlieferung/Handorf/ZOOM0004_0.MP4'
