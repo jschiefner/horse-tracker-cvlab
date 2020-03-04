@@ -12,7 +12,7 @@ from progress.bar import Bar
 from progress.spinner import Spinner
 with warnings.catch_warnings():
     warnings.simplefilter('ignore')
-    from box_detector import BoxDetector 
+    from yolo_box_detector import BoxDetector 
     box_detector = BoxDetector()
 from kalman import Kalman2D
 from video_manager import VideoManager

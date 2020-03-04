@@ -3,7 +3,7 @@ import cv2
 import warnings
 with warnings.catch_warnings():
     warnings.simplefilter('ignore')
-    from box_detector import BoxDetector
+    from yolo_box_detector import BoxDetector
 
 
 class Detector():
