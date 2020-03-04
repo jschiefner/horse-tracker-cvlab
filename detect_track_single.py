@@ -1,0 +1,104 @@
+# %% imports
+# %load_ext autoreload
+# %autoreload 2
+import sys
+import warnings
+import logging
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+from progress.bar import Bar
+from progress.spinner import Spinner
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    from yolo_box_detector import BoxDetector
+from video_manager import VideoManager
+from horse import Horse
+
+frame_width = 3840
+frame_height = 2160
+ratio = frame_width / frame_height
+logger = logging.getLogger('horse')
+handler = logging.FileHandler('out/log.txt', 'a')
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
+# %% class
+
+def find_closest_box(horse, boxes):
+    distances = np.empty(len(boxes), dtype=np.float32)
+    for index, box in enumerate(boxes):
+        box_distance = horse.distance(box)
+        distances[index] = box_distance
+    min_index = np.argmin(distances)
+    min_distance = distances[min_index]
+    if min_distance > horse.allowed_distance():
+        logger.info(f'allowed distance was not high enough ({min_distance}, {horse.allowed_distance()})')
+        return None
+    return boxes[min_index]
+        
+class Manager():
+    def __init__(self, input, output, max_frames, skip, show):
+        self.video = VideoManager(input, output, max_frames, skip, show)
+        self.horse = None
+        
+    def match(self, frame, boxes, scores):
+        # if no horse and no boxes: return
+        # if no horse and boxes: assign first box
+        # if horse but no boxes: track
+        # if horse and boxes: find closest box
+        logger.info(f'detected boxes: {boxes}')
+        if self.horse is None and len(boxes) == 0: return
+        elif self.horse is None and len(boxes) > 0:
+            max_index = np.argmax(scores)
+            self.horse = Horse(boxes[max_index], 0)
+        elif self.horse is not None and len(boxes) == 0:
+            self.horse.track(frame)
+        elif self.horse is not None and len(boxes) > 0:
+            box = find_closest_box(self.horse, boxes)
+            if box is None:
+                self.horse.track()
+            else:
+                self.horse.detect(box)
+        
+    def initialize(self):
+        raw = self.video.read()
+        frame = raw.copy()
+        smooth = raw.copy()
+        boxes, scores = box_detector.detect_boxes(frame)
+        self.match(frame, boxes, scores)
+        if self.horse is not None:
+            self.horse.draw(frame)
+            self.horse.draw_smooth(smooth)
+        horses = [] if self.horse is None else [self.horse]
+        self.video.write(raw, frame, smooth, horses)
+    
+    def update(self):
+        raw = self.video.read()
+        frame = raw.copy()
+        smooth = raw.copy()
+        if self.horse is not None:
+            self.horse.updated = False
+            self.horse.last_detected += 1
+        boxes, scores = box_detector.detect_boxes(frame)
+        self.match(frame, boxes, scores)
+        if self.horse is not None and self.horse.gone():
+            self.horse = None
+        self.horse.update(frame, [])
+        self.horse.draw(frame)
+        self.horse.draw_smooth(smooth)
+        horses = [] if self.horse is None else [self.horse]
+        self.video.write(raw, frame, smooth, horses)
+
+# %% action
+
+input_file = 'data/videos/GP028294.MP4'; out = 'out/single_horse_yolo'; skip = 0; frames = 100
+box_detector = BoxDetector()
+manager = Manager(input_file, out, max_frames=frames, skip=skip, show=False)
+manager.initialize()
+for i in range(frames-1):
+    try:
+        manager.update()
+    except KeyboardInterrupt:
+        break
+manager.video.close()
