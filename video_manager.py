@@ -4,6 +4,7 @@ from progress.bar import Bar
 from progress.spinner import Spinner
 import matplotlib.pyplot as plt
 import logging
+from timeit import default_timer as timer
 logger = logging.getLogger('horse')
 
 frame_width = 3840
@@ -37,7 +38,7 @@ def zoom(frame, horse):
     return resized
 
 class VideoManager():
-    def __init__(self, input, output, max_frames, skip, show=True):
+    def __init__(self, input, output, max_frames, skip, show=False):
         self.cap = cv2.VideoCapture(input)
         if not self.cap.isOpened():
             logger.info('Unable to read video feed')
@@ -52,6 +53,10 @@ class VideoManager():
         self.bar = Bar('Processing frames', max=max_frames)
         self.output = output
         self.show = show
+        logger.info('################################################################################')
+        logger.info(f'Input: \033[92m{input}\033[00m, Output: \033[92m{output}\033[00m')
+        logger.info(f'\033[92m{max_frames}\033[00m frames, show while processing: \033[92m{show}\033[00m')
+        self.start_time = timer()
         
     def skip(self, frames):
         spinner = Spinner(f'Skipping {frames} Frames... ')
@@ -106,6 +111,8 @@ class VideoManager():
         
     def close(self):
         self.bar.finish()
+        elapsed_seconds = timer()-self.start_time; elapsed_minutes = elapsed_seconds / 60
+        logger.info(f'time elapsed: \033[92m{elapsed_seconds}\033[00m seconds => \033[92m{elapsed_minutes}\033[00m minutes.')
         logger.info(f'Processed \033[92m{self.count}\033[00m/{self.max_frames} frames.')
         logger.info(f'Saving result to \033[92m{self.output}\033[00m.')
         logger.info('')
