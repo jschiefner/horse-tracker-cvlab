@@ -10,8 +10,6 @@ def show(img):
 images = []
 for i in range(6, 10):
     images.append(cv2.imread(f'data/images/GOPR8291/0022{i}.png'))
-import random as rng
-rng.seed(12345)
 height = 2160
 width = 3840
 # %% action
