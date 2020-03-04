@@ -12,7 +12,6 @@ from progress.spinner import Spinner
 with warnings.catch_warnings():
     warnings.simplefilter('ignore')
     from background_box_detector import BoxDetector 
-from kalman import Kalman2D
 from video_manager import VideoManager
 from horse import Horse
 from timeit import default_timer as timer
