@@ -13,3 +13,4 @@ model_data/
 logs/
 bottlenecks.npz
 goturn.caffemodel
+checkpoints
