@@ -1,13 +1,12 @@
 # Lab course Horse detection
-Copy logs & model_data folders
+
+Copy Folders marked in gitignore to run the examples
 
 ### Usage
+
 run horsinaround.py infile outfile skipframes takeframes 
 
-
 ### Dependencies
-
-
 
  - Global
    - libopencv-dev
@@ -26,4 +25,25 @@ run horsinaround.py infile outfile skipframes takeframes
    - progress
    - filterpy
    
-   
+### Aufbau
+
+#### cropper
+
+#### smoother
+ - takes x,y,h and gives back smoothed versions of them
+
+#### reader
+ - read
+ - skipframes
+
+#### detector
+ - uses box detector
+ - gives back box
+
+#### tracker
+
+#### writer
+
+#### horsinaround
+ - main
+ - argparse
