@@ -75,5 +75,3 @@ for index, target_path in enumerate(file_list):
         out_file.write(f'{target_out_path},{searching_out_path},{sleft},{stop},{sright},{sbottom}\n')
         
 out_file.close()
-
-# np.array([-1.9142857142857144,0.12000000000000001,-1.4571428571428573,0.6342857142857142]) * 227
