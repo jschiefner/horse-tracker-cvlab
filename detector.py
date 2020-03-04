@@ -5,13 +5,10 @@ with warnings.catch_warnings():
     warnings.simplefilter('ignore')
     from yolo_box_detector import BoxDetector
 
-
 class Detector():
     def __init__(self,draw=False):
         self.d = BoxDetector()
-
         self.draw=draw
-
 
     def detect(self,frame): # return
         image = Image.fromarray(frame)
@@ -19,8 +16,6 @@ class Detector():
 
         if len(boxes) == 0:
             return False, None, frame
-
-        #print(scores,boxes)
 
         if self.draw==True:
             for box in boxes:

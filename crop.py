@@ -1,30 +1,25 @@
 import cv2
 import numpy as np
 
-
 class Cropper():
     def __init__(self,ratio=1.5, zoom=2):
         self.ratio = ratio
         self.zoom = zoom
-
 
     def crop(self, frame, x, y, h):
         crop_h = int(h*self.zoom)
         crop_w = int(crop_h*self.ratio)
         # TODO get maximalste groeßte bei vorgegebenen ratio
         max_h, max_w, _ = frame.shape
-        if max_h*self.ratio>max_w:
+        if max_h * self.ratio > max_w:
             max_h = int(max_w / self.ratio)
         else:
             max_w = int(max_h * self.ratio)
-
 
         if crop_h>max_h:
             crop_h=max_h
         if crop_w>max_w:
             crop_w=max_w
-
-        #print("crop h",crop_h)
 
         left = int(x - crop_w / 2)
         right = int(x + crop_w / 2)
@@ -40,7 +35,6 @@ class Cropper():
             right = frame.shape[1]
             left = frame.shape[1]  - crop_w
 
-        #
         top = int(y - crop_h / 2)
         bottom = int(y + crop_h / 2)
 
@@ -55,7 +49,6 @@ class Cropper():
             bottom = frame.shape[0]
             top = frame.shape[0] - crop_h
 
-        #
         cutout = frame[top:bottom, left:right]
         if False:
             print("lrtb", left, right, top, bottom)

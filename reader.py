@@ -23,26 +23,20 @@ class Reader():
             return None
 
         ret, frame = self.cap.read()
-        x=0
         while not ret:
-            print("Frame konnte nicht gelesen werden",x)
-            x+=1
             ret, frame = self.cap.read()
 
         if newsize!=(0,0):
             frame = cv2.resize(frame,newsize)
         if self.show==True:
-            cv2.imshow("frame",frame) # eventuell anders benennen
+            cv2.imshow("frame", frame) # eventuell anders benennen
         return frame
 
-
-
     def skipFrames(self,frames_to_skip):
-
         try:
             self.read()
             self.cap.set(cv2.CAP_PROP_POS_FRAMES,self.cap.get(cv2.CAP_PROP_POS_FRAMES)+frames_to_skip)
-            print("Skipped "+str(frames_to_skip)+" frames")
+            print("Skipped " + str(frames_to_skip) + " frames")
         except Exception as e:
             print("Frame skippen fehlgeschlagen")
             print(e)
@@ -52,4 +46,3 @@ class Reader():
 
     def __del__(self):
         self.cap.release()
-        # cv2.destroyAllWindows()

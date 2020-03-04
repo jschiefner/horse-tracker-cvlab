@@ -36,9 +36,6 @@ for folder in os.walk(folder_path):
                 bottom = round(y + half_height)
                 
                 output_str = f'{image_path} {left},{top},{right},{bottom},0\n'
-                # print(output_str)
-                # todo: write to file
                 out_file.write(output_str)
-                
-    
+
 out_file.close()

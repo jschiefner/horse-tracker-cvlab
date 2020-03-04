@@ -3,7 +3,6 @@ from filterpy.kalman import FixedLagSmoother
 from filterpy.common import Q_discrete_white_noise
 import numpy as np
 
-
 class Smoother():
     def __init__(self, initx=0., inity=0.,inith=0):
         #TODO change to batch_smooth for performance
