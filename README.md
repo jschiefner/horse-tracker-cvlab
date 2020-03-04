@@ -1,6 +1,7 @@
 # Lab course Horse detection
 
-Copy Folders marked in gitignore to run the examples
+ - Repository based on https://github.com/qqwweee/keras-yolo3, to train follow the instructions there
+ - Copy Folders marked in gitignore to run the examples
 
 ### Usage
 
