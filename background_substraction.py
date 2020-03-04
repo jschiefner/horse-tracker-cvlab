@@ -12,39 +12,31 @@ for i in range(6, 10):
     images.append(cv2.imread(f'data/images/GOPR8291/0022{i}.png'))
 import random as rng
 rng.seed(12345)
+height = 2160
+width = 3840
 # %% action
 
 img = images[1]
+show(img)
 median = np.median(images, axis=0).astype(np.uint8)
+show(median)
 diff = cv2.subtract(median, img)
 show(diff)
 
-# %%
-
 gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
-gray = cv2.GaussianBlur(gray, (51,51), 50)
 show(gray)
-_, thresh = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
+blurred = cv2.GaussianBlur(gray, (51,51), 50)
+show(blurred)
+_, thresh = cv2.threshold(blurred, 10, 255, cv2.THRESH_BINARY)
 show(thresh)
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (200, 200))
 dilated = cv2.dilate(thresh, kernel)
+show(dilated)
 eroded = cv2.erode(dilated, kernel)
 show(eroded)
-[contours], hierarchy = cv2.findContours(eroded, cv2.CHAIN_APPROX_SIMPLE, cv2.RETR_EXTERNAL)
-# contours_poly = [None] * len(contours)
-# boundRect = [None] * len(contours)
-# centers = [None]*len(contours)
-# radius = [None]*len(contours)
-# for i, c in enumerate(contours):
-#     contours_poly[i] = cv2.approxPolyDP(c, 3, True)
-#     boundRect[i] = cv2.boundingRect(contours_poly[i])
-#     centers[i], radius[i] = cv2.minEnclosingCircle(contours_poly[i])
-# boundRect
-# drawing = np.zeros((eroded.shape[0], eroded.shape[1], 3), dtype=np.uint8)
-# for i in range(len(contours)):
-#     color = (255,255,255)
-#     cv2.drawContours(drawing, contours_poly, i, color)
-#     cv2.rectangle(drawing, (int(boundRect[i][0]), int(boundRect[i][1])), \
-#       (int(boundRect[i][0]+boundRect[i][2]), int(boundRect[i][1]+boundRect[i][3])), color, 2)
-#     cv2.circle(drawing, (int(centers[i][0]), int(centers[i][1])), int(radius[i]), color, 2)
-# show(drawing)
+# [contours], hierarchy = cv2.findContours(eroded.copy(), cv2.CHAIN_APPROX_SIMPLE, cv2.RETR_EXTERNAL)
+contours, hierarchy = cv2.findContours(eroded, 1, 2) # evtl ohne dilate und erode
+cnt = contours[0] # attention here: index could be out of bounds == no contour found!
+x,y,w,h = cv2.boundingRect(cnt)
+cv2.rectangle(img,(x,y),(x+w,y+h),(0,0,255),5)
+show(img)
