@@ -5,6 +5,7 @@ Class definition of YOLO_v3 style detection model on image and video
 
 import colorsys
 import os
+from PIL import Image
 
 import numpy as np
 from keras import backend as K
@@ -96,6 +97,7 @@ class BoxDetector(object):
         return boxes, scores, classes
 
     def detect_boxes(self, image):
+        image = Image.fromarray(image)
         if self.model_image_size != (None, None):
             assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'

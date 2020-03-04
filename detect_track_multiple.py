@@ -7,13 +7,11 @@ import logging
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image
 from progress.bar import Bar
 from progress.spinner import Spinner
 with warnings.catch_warnings():
     warnings.simplefilter('ignore')
-    from yolo_box_detector import BoxDetector 
-    box_detector = BoxDetector()
+    from background_box_detector import BoxDetector 
 from kalman import Kalman2D
 from video_manager import VideoManager
 from horse import Horse
@@ -27,7 +25,6 @@ logger = logging.getLogger('horse')
 handler = logging.FileHandler('out/log.txt', 'a')
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
-global_horse_number = 0
 
 # %% class
 
@@ -84,9 +81,7 @@ class Manager():
         self.horses = self.horses[self.horses != horse]
     
     def detect(self, frame):
-        image = Image.fromarray(frame)
-        boxes, scores = box_detector.detect_boxes(image)
-        logger.info(['scores:', scores])
+        boxes, scores = box_detector.detect_boxes(frame)
         relevant_boxes = []
         for index in range(len(boxes)):
             # todo: find appropriate value for low score
@@ -140,21 +135,22 @@ class Manager():
             horse.draw(frame)
             horse.draw_smooth(smooth)
         self.video.write(raw, frame, smooth, self.horses)
-    
+
 # %% action
 # skip = 13*23
-input_file = 'data/videos/GP038291.MP4'; out = 'out/two_horses_big'; skip = 0; frames = 120
+input_file = 'data/videos/GP028294.MP4'; out = 'out/one_horse_background2'; skip = 0; frames = 125+375
 # input_file = 'data/videos/Nachlieferung/Handorf/ZOOM0004_0.MP4'; skip = (7*60+13)*23
 # input_file = 'data/videos/Nachlieferung/Kirchhellen/ZOOM0001_1.MP4'; skip = 0
 # input_file = 'data/videos/Nachlieferung/Handorf/ZOOM0004_0.MP4'
 # input_file = 'data/videos/GP028294.MP4'; skip = 32*23 + 51 + 21
 # input_file = 'data/videos/Nachlieferung/Handorf/ZOOM0004_0.mp4'; skip = 3680; frames = 598
 global_horse_number = 0
+box_detector = BoxDetector()
 # out = 'out/two_horses'
 # _, input_file, out, frames, skip, = sys.argv
 frames = int(frames)
 skip = int(skip)
-manager = Manager(input_file, out, max_frames=frames, skip=skip, show=True)
+manager = Manager(input_file, out, max_frames=frames, skip=skip, show=False)
 manager.initialize()
 start = timer()
 for i in range(frames-1):
