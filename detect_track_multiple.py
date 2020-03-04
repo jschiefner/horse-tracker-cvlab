@@ -14,7 +14,6 @@ with warnings.catch_warnings():
     from background_box_detector import BoxDetector 
 from video_manager import VideoManager
 from horse import Horse
-from timeit import default_timer as timer
 
 frame_width = 3840
 frame_height = 2160
@@ -151,13 +150,9 @@ frames = int(frames)
 skip = int(skip)
 manager = Manager(input_file, out, max_frames=frames, skip=skip, show=False)
 manager.initialize()
-start = timer()
 for i in range(frames-1):
     try:
         manager.update()
     except KeyboardInterrupt:
         break
-end = timer()
-elapsed_seconds = end-start; elapsed_minutes = elapsed_seconds / 60
-logger.info(f'time elapsed: \033[92m{elapsed_seconds}\033[00m seconds => \033[92m{elapsed_minutes}\033[00m minutes.')
 manager.video.close()

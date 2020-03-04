@@ -31,7 +31,6 @@ class Horse():
         self.smooth_box = box
         self.last_detected = 0
         self.tracker = None
-        self.kalman2d = None
         self.height_history = None
         self.movement_history = np.zeros(10, dtype=np.float64)
         self.status = 'detected'
