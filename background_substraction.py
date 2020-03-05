@@ -8,13 +8,13 @@ def show(img):
     plt.figure(figsize=(14.4, 25.6))
     plt.imshow(img)
 images = []
-for i in range(17, 22):
-    images.append(cv2.imread(f'data/images/GOPR8291/000{i}.png'))
+for i in range(64, 67):
+    images.append(cv2.imread(f'data/images/GP028291/000{i}.png'))
 height = 2160
 width = 3840
 # %% action
 
-img = images[3].copy()
+img = images[1].copy()
 show(img)
 median = np.median(images, axis=0).astype(np.uint8)
 show(median)
