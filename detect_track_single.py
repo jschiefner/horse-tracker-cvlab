@@ -50,7 +50,8 @@ class Manager():
         elif self.horse is not None and len(boxes) > 0:
             box = find_closest_box(self.horse, boxes)
             if box is None:
-                self.horse.track()
+                #self.horse.track() # old
+                self.horse.track(frame)
             else:
                 self.horse.detect(box)
         
