@@ -1,110 +1,62 @@
-# %% imports
-
 import sys
-import cv2
-from crop import Cropper
-from detector import Detector
-# from reader import Reader
-from smooth import Smoother
-# from writer import Writer
-from progress.bar import Bar
-from video_manager import VideoManager
+import argparse
+import warnings
+import logging
+# import box_detector
 
-# %% action
+logger = logging.getLogger('horse')
+logger.addHandler(logging.FileHandler('out/log.txt', 'a'))
+logger.setLevel(logging.INFO)
 
-# if len(sys.argv)<=1:
-#     print("Usage: horsinaround.py inputfile outfile skipframes=0 framestowrite")
-#     exit(0)
+parser = argparse.ArgumentParser(description='Horsing Around')
+parser.add_argument('input', metavar='input', type=str, help='path to the input video')
+parser.add_argument('output', metavar='output', type=str, help='path to the vidoe output')
+parser.add_argument('frames', metavar='frames', type=str, help='Amount of frames to be processed in total')
+parser.add_argument('--skip', dest='skip', action='store', nargs='?', type=int, default=0, help='Choose amount of frames to be skipped')
+parser.add_argument('--single', dest='single', action='store_true', help='Expcting only a single horse')
+parser.add_argument('--multiple', dest='multiple', action='store_true', help='Expcting multiple horses in the video')
+parser.add_argument('--mode', dest='mode', action='store', nargs='?', type=str, default='yolo', help='Choose the Detection Mode: tinyyolo, yolo or background')
+args = parser.parse_args()
 
-# filename = sys.argv[1]
-# skip = int(sys.argv[3])
-# framestowrite = int(sys.argv[4])
+if args.single == args.multiple:
+    print('either pass --single or --multiple')
+    exit(1)
+if args.mode != 'tinyyolo' and args.mode != 'yolo' and args.mode != 'background':
+    print('mode needs to be either "tinyyolo", "yolo" or "background"')
+    exit(1)
 
-filename = 'data/videos/GP038291.MP4'
-outfile = f'out/around{input()}.avi'
-skip = 8 * 23
-framestowrite = 8 * 23
-show = True
+input, output, frames, skip, mode = args.input, args.output, int(args.frames), int(args.skip), args.mode
 
-video = VideoManager(filename, outfile, framestowrite, skip, show)
-print("fps:",video.getFPS())
-height = video.getHeight()
-width = video.getWidth()
-midx = int(width/2.)
-midy = int(height/2.)
-
-# writer = Writer(outfile,480,720)
-cropper = Cropper()
-detector = Detector(draw=show)
-smoother = Smoother(initx=midx,inity=midy,inith=height)
-
-bar = Bar('Processing frames', max=framestowrite)
-hhh = []
-
-failedlasttime=False
-for x in range(framestowrite):
-    bar.next()
-    frame = video.read()
-    orig_frame = frame.copy()
-    if failedlasttime or x%6==0:
-        success, box, frame = detector.detect(frame)
-        if success:
-            failedlasttime = False
-            # only 1 horse at a time
-
-            left, top, right, bottom = box
-            height = bottom - top
-            midx = left + (right - left) / 2
-            midy = top + height / 2
-            if height < 0: height *= -1
-            hhh.append(height)
-            if midx < 0: midx *= -1
-            if midy < 0: midy *= -1
-            midx, midy, height = smoother.update(midx, midy, height)
-
-            # tracker
-            # TODO init tracker
-            initBB = (left, top, right - left, bottom - top)
-            #print(initBB)
-            tracker = cv2.TrackerCSRT_create()
-            # tracker = cv2.TrackerGOTURN_create()
-            tracker.init(orig_frame, initBB)
+if mode == 'background':
+    print('loading Background Subtraction box detector')
+    from background_box_detector import BoxDetector
+    detector = BoxDetector()
+    print('adding 150 frames for background_box_detector to calibrate')
+    frames += 150
+else:
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        from yolo_box_detector import BoxDetector
+        if mode == 'yolo':
+            print('loading YOLO box detector')
+            detector = BoxDetector(model_path='logs/000/super_intermediate2.h5', anchors_path='model_data/yolo_anchors.txt')
         else:
-            failedlasttime=True
-    else:
-        success, box = tracker.update(orig_frame)
-        #print(box)
-        if success:
-            failedlasttime = False
-            # only 1 horse at a time
+            print('loading Tiny-YOLO box detector')
+            detector = BoxDetector(model_path='logs/000/tiny-yolo-intermediate1.h5', anchors_path='model_data/tiny_yolo_anchors.txt')
+            
+if args.single:
+    print('loading single horse manager')
+    from detect_track_single import Manager
+else:
+    print('loading multiple horse manager')
+    from detect_track_multiple import Manager
 
-            left, top, width, height = box
-            if show==True:
-                cv2.rectangle(frame, (int(left), int(top)), (int(left+width), int(top+height)), (0, 255, 0), 1)
-
-            midx = left + (width) / 2
-            midy = top + height / 2
-            if height < 0: height *= -1
-            hhh.append(height)
-            if midx < 0: midx *= -1
-            if midy < 0: midy *= -1
-            midx, midy, height = smoother.update(midx, midy, height)
-        else:
-            failedlasttime = True
-
-    cutout = cropper.crop(orig_frame,midx,midy,height)
-    resized = cv2.resize(cutout, (3840, 2160))
-    video.write(resized)
-
-    # if show:
-    #     key= cv2.waitKey(1) & 0xFF
-    #     if key==ord("q"):
-    #         break
-    #     elif key==ord("s"):
-    #         video.skipFrames(video.getFPS())
-
-# cv2.destroyAllWindows()
-print("")
-print(hhh)
-video.close()
-
+manager = Manager(input, output, frames, skip, False, detector)
+manager.initialize()
+for i in range(frames-1):
+    try:
+        manager.update()
+    except Exception as e:
+        print(e)
+        break
+manager.video.close()

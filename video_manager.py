@@ -5,6 +5,7 @@ from progress.spinner import Spinner
 import matplotlib.pyplot as plt
 import logging
 from timeit import default_timer as timer
+from crop import Cropper
 logger = logging.getLogger('horse')
 
 frame_width = 3840
@@ -12,30 +13,13 @@ frame_height = 2160
 ratio = frame_width / frame_height
 plot_width = 14
 fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
+cropper = Cropper()
 
 def show_frame(frame):
     plt.close()
     plt.figure(figsize=(plot_width, plot_width * ratio))
     plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
     plt.show()
-    
-def zoom(frame, horse):
-    left, top, right, bottom = horse.smooth_box
-    x, y = horse.smooth_center()
-    height = bottom - top + 400 # todo: better value!
-    width = height * ratio
-    dist_x = int(width // 2)
-    dist_y = int(height // 2)
-    left = x - dist_x; right = x + dist_x
-    top = y - dist_y; bottom = y + dist_y
-    # todo: make this more efficient (np.clip)
-    if left < 0: left = 0
-    if right < 0: right = 0
-    if bottom < 0: bottom = 0
-    if top < 0: top = 0
-    cropped = frame[top:bottom, left:right]
-    resized = cv2.resize(cropped, (frame_width, frame_height))
-    return resized
 
 class VideoManager():
     def __init__(self, input, output, max_frames, skip, show=False):
@@ -103,9 +87,9 @@ class VideoManager():
                 logger.info('can not support more than 5 horses at once')
                 continue
             out = self.horse_out(horse)
-            zoomed = zoom(raw, horse)
-            # if self.show: show_frame(zoomed)
-            out.write(zoomed)
+            cropped = cropper.crop(horse.smooth_box, raw)
+            # if self.show: show_frame(cropped)
+            out.write(cropped)
         self.smooth_out.write(smooth)
         self.out.write(frame)
         

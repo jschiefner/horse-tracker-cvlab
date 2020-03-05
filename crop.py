@@ -1,12 +1,23 @@
 import cv2
 import numpy as np
 
+frame_width = 3840
+frame_height = 2160
+ratio = frame_width / frame_height
+
 class Cropper():
-    def __init__(self,ratio=1.5, zoom=2):
+    def __init__(self,ratio=ratio, zoom=2):
         self.ratio = ratio
         self.zoom = zoom
-
-    def crop(self, frame, x, y, h):
+        
+    def crop(self, box, frame):
+        left, top, right, bottom = box
+        x = np.mean((left, right)).astype(int)
+        y = np.mean((top, bottom)).astype(int)
+        h = bottom - top
+        return self._crop_with_center(frame, x, y, h)
+        
+    def _crop_with_center(self, frame, x, y, h):
         crop_h = int(h*self.zoom)
         crop_w = int(crop_h*self.ratio)
         # TODO get maximalste groeßte bei vorgegebenen ratio
@@ -55,6 +66,6 @@ class Cropper():
             print("cutout size:",cutout.shape[0:2])
             print("crop_h_w",crop_h,crop_w)
         assert (cutout.shape[0:2] == (crop_h, crop_w))
-
-        return cutout
+        resized = cv2.resize(cutout, (frame_width, frame_height))
+        return resized
 
