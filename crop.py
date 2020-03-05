@@ -3,12 +3,16 @@ import numpy as np
 
 frame_width = 3840
 frame_height = 2160
+#base=frame_height*0.05 # nutze base wenn der zoom auf distanzierte Reiter zu  "aggressiv" ist
+# dann wird gewahrleistet das die box eine ungefahre mindestgrose haben
+base=0
 ratio = frame_width / frame_height
 
 class Cropper():
-    def __init__(self,ratio=ratio, zoom=2):
+    def __init__(self,ratio=ratio, zoom=2,base=base):
         self.ratio = ratio
         self.zoom = zoom
+        self.base = base # gets always added to cropbox
         
     def crop(self, box, frame):
         left, top, right, bottom = box
@@ -18,10 +22,12 @@ class Cropper():
         return self._crop_with_center(frame, x, y, h)
         
     def _crop_with_center(self, frame, x, y, h):
-        crop_h = int(h*self.zoom)
-        crop_w = int(crop_h*self.ratio)
-        # TODO get maximalste groeßte bei vorgegebenen ratio
         max_h, max_w, _ = frame.shape
+
+        crop_h = int(h*self.zoom + self.base)
+        crop_w = int(crop_h*self.ratio)
+
+
         if max_h * self.ratio > max_w:
             max_h = int(max_w / self.ratio)
         else:
@@ -61,7 +67,7 @@ class Cropper():
             top = frame.shape[0] - crop_h
 
         cutout = frame[top:bottom, left:right]
-        if False:
+        if False: # set true for debug reasons
             print("lrtb", left, right, top, bottom)
             print("cutout size:",cutout.shape[0:2])
             print("crop_h_w",crop_h,crop_w)

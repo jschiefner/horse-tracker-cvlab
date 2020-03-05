@@ -34,8 +34,8 @@ class Smoother():
         self.hfilter.R *= 100.0
         self.hfilter.Q *= 0.001
         
-    def predict(self, h): #TODO remove, diese Funktion wird nicht benoetig, lag smooth arbeitet nur mit smooth nicht predict und uopdate
-        raise Exception("remove, diese Funktion wird nicht benoetig, lag smooth arbeitet nur mit smooth nicht predict und uopdate")
+    def predict(self, h):
+        raise Exception("remove, diese Funktion wird nicht benoetig, lag smooth arbeitet nur mit smooth; nicht mit predict und update")
 
 
     def update(self, x, y, h):
