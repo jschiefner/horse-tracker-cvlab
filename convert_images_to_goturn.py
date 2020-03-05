@@ -48,10 +48,14 @@ for folder_path in folder_paths:
         target_name, _ = os.path.splitext(target_file)
         target_txt_path = os.path.join(folder_path, txt(target_name))
         target = cv2.imread(target_path)
-        with open(target_txt_path, mode='r') as file:
-            _, x, y, _, height = file.readline().split(' ')
-            x, y, height = round(float(x)*frame_width), round(float(y)*frame_height), round(float(height)*frame_height)
-            x,y,height
+        try:
+            with open(target_txt_path, mode='r') as file:
+                _, x, y, _, height = file.readline().split(' ')
+                x, y, height = round(float(x)*frame_width), round(float(y)*frame_height), round(float(height)*frame_height)
+                x,y,height
+        except Exception as e:
+            print(e)
+            continue
         offset = round(sqrt2*height/2)
         left, top, right, bottom = x-offset, y-offset, x+offset, y+offset
         cropped_height = bottom-top
@@ -75,10 +79,13 @@ for folder_path in folder_paths:
             searching = cv2.imread(searching_path)
             searching_txt_path = os.path.join(folder_path, txt(searching_name))
             resized_searching = cv2.resize(searching[top:bottom, left:right], (out_res, out_res))
-
-            with open(searching_txt_path, mode='r') as file:
-                _, x, y, width, height = file.readline().split(' ')
-                x, y, offset_x, offset_y = float(x)*frame_width, float(y)*frame_height, float(width)*frame_width/2, float(height)*frame_height/2
+            try:
+                with open(searching_txt_path, mode='r') as file:
+                    _, x, y, width, height = file.readline().split(' ')
+                    x, y, offset_x, offset_y = float(x)*frame_width, float(y)*frame_height, float(width)*frame_width/2, float(height)*frame_height/2
+            except Exception as e:
+                print(e)
+                continue
             sleft, stop, sright, sbottom = round(x-offset_x), round(y-offset_y), round(x+offset_x), round(y+offset_y)
             sleft, stop, sright, sbottom = sleft-left, stop-top, sright-left, sbottom-top
             sleft, stop, sright, sbottom = sleft*scale, stop*scale, sright*scale, sbottom*scale
