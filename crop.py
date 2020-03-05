@@ -1,15 +1,14 @@
 import cv2
 import numpy as np
 
-frame_width = 3840
-frame_height = 2160
+
 #base=frame_height*0.05 # nutze base wenn der zoom auf distanzierte Reiter zu  "aggressiv" ist
 # dann wird gewahrleistet das die box eine ungefahre mindestgrose haben
 base=0
-ratio = frame_width / frame_height
+
 
 class Cropper():
-    def __init__(self,ratio=ratio, zoom=2,base=base):
+    def __init__(self,ratio=1.5, zoom=2,base=base):
         self.ratio = ratio
         self.zoom = zoom
         self.base = base # gets always added to cropbox
@@ -72,6 +71,6 @@ class Cropper():
             print("cutout size:",cutout.shape[0:2])
             print("crop_h_w",crop_h,crop_w)
         assert (cutout.shape[0:2] == (crop_h, crop_w))
-        resized = cv2.resize(cutout, (frame_width, frame_height))
-        return resized
+        #resized = cv2.resize(cutout, (frame_width, frame_height))
+        return cutout
 

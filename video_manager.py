@@ -8,12 +8,12 @@ from timeit import default_timer as timer
 from crop import Cropper
 logger = logging.getLogger('horse')
 
-frame_width = 3840
-frame_height = 2160
+frame_width = 1080
+frame_height = 720
 ratio = frame_width / frame_height
 plot_width = 14
 fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
-cropper = Cropper()
+cropper = Cropper(ratio)
 
 def show_frame(frame):
     plt.close()
@@ -88,6 +88,7 @@ class VideoManager():
                 continue
             out = self.horse_out(horse)
             cropped = cropper.crop(horse.smooth_box, raw)
+            cropped = cv2.resize(cropped,(frame_width.frame_height))
             # if self.show: show_frame(cropped)
             out.write(cropped)
         self.smooth_out.write(smooth)
