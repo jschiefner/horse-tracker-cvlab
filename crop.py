@@ -21,6 +21,8 @@ class Cropper():
         return self._crop_with_center(frame, x, y, h)
         
     def _crop_with_center(self, frame, x, y, h):
+        # returns cutout in correct frame ratio
+        # needs to be resized in video manager
         max_h, max_w, _ = frame.shape
 
         crop_h = int(h*self.zoom + self.base)

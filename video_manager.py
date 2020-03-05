@@ -88,7 +88,7 @@ class VideoManager():
                 continue
             out = self.horse_out(horse)
             cropped = cropper.crop(horse.smooth_box, raw)
-            cropped = cv2.resize(cropped,(frame_width.frame_height))
+            cropped = cv2.resize(cropped,(frame_width,frame_height))
             # if self.show: show_frame(cropped)
             out.write(cropped)
         self.smooth_out.write(smooth)
