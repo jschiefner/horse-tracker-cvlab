@@ -5,7 +5,21 @@
 
 ### Usage
 
-run horsinaround.py infile outfile skipframes takeframes 
+Run `python horsinaround.py` with the following arguments:
+
+```
+usage: horsinaround.py [-h] [--skip [SKIP]] [--single] [--multiple]
+                       [--mode [MODE]]
+                       input output frames
+```
+ - `skip` should be the amount of frames you want to skip at the beginning at the video (defaults to 0).
+ - `--single` should be passed without parameter if a single horse should be tracked
+ - `--multiple` should be passed without parameter if multiple horses should be tracked
+ - `--mode` is the horse detection mode. Can be one of `tinyyolo`, `yolo` and `background`
+ - `input` is the input video file path
+ - `output` is the path for the video output. The `.avi` extension will automatically be appended, so only the filename needs to be given here
+ - `frames` is the amount of frames that should be processed
+
 
 ### Dependencies
 
