@@ -10,6 +10,8 @@ logger = logging.getLogger('horse')
 
 frame_width = 1280
 frame_height = 720
+## end
+
 ratio = frame_width / frame_height
 plot_width = 14
 fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
@@ -32,7 +34,10 @@ class VideoManager():
         self.horses = [None, None, None, None, None]
         self.outs = [None, None, None, None, None]
         self.count = 0
+        if max_frames==0:
+            max_frames=self.cap.get(cv2.CAP_PROP_FRAME_COUNT)-skip
         self.max_frames = max_frames
+
         if skip > 0: self.skip(skip)
         self.bar = Bar('Processing frames', max=max_frames)
         self.output = output
@@ -63,7 +68,10 @@ class VideoManager():
         
     def getFPS(self):
         return self.cap.get(cv2.CAP_PROP_FPS)
-    
+
+    def getFrameCount(self):
+        return self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
+
     def read(self):
         self.bar.next()
         logger.info('')
@@ -73,6 +81,7 @@ class VideoManager():
             if ret:
                 self.count += 1
                 return frame
+
                                 
     def horse_out(self, horse):
         index = horse.number

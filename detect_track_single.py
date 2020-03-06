@@ -85,3 +85,6 @@ class Manager():
             self.horse = None
         horses = [] if self.horse is None else [self.horse]
         self.video.write(raw, frame, smooth, horses)
+
+    def getFrameCount(self):
+        return self.video.getFrameCount()

@@ -2,6 +2,7 @@ import sys
 import argparse
 import warnings
 import logging
+import time
 # import box_detector
 
 logger = logging.getLogger('horse')
@@ -11,7 +12,7 @@ logger.setLevel(logging.INFO)
 parser = argparse.ArgumentParser(description='Horsing Around')
 parser.add_argument('input', metavar='input', type=str, help='path to the input video')
 parser.add_argument('output', metavar='output', type=str, help='path to the vidoe output')
-parser.add_argument('frames', metavar='frames', type=str, help='Amount of frames to be processed in total')
+parser.add_argument('frames', metavar='frames', type=str, help='Amount of frames to be processed in total, 0 to go to EOF')
 parser.add_argument('--skip', dest='skip', action='store', nargs='?', type=int, default=0, help='Choose amount of frames to be skipped')
 parser.add_argument('--single', dest='single', action='store_true', help='Expcting only a single horse')
 parser.add_argument('--multiple', dest='multiple', action='store_true', help='Expcting multiple horses in the video')
@@ -52,11 +53,16 @@ else:
     from detect_track_multiple import Manager
 
 manager = Manager(input, output, frames, skip, False, detector)
+print("Zeitpunnkt A",time.time())
 manager.initialize()
-for i in range(frames-1):
+if frames==0:
+    frames=int(manager.getFrameCount()-skip)
+print(frames)
+for i in range(frames-2):
     try:
         manager.update()
     except:
         print('Exception!')
         break
 manager.video.close()
+print("Zeitpunkt B",time.time())
