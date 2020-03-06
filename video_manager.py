@@ -8,7 +8,7 @@ from timeit import default_timer as timer
 from crop import Cropper
 logger = logging.getLogger('horse')
 
-frame_width = 1080
+frame_width = 1280
 frame_height = 720
 ratio = frame_width / frame_height
 plot_width = 14
@@ -27,11 +27,8 @@ class VideoManager():
         if not self.cap.isOpened():
             logger.info('Unable to read video feed')
             exit(1)
-        w=int(self.getWidth())
-        h=int(self.getHeight())
-        print("w h",w,h)
-        self.out = cv2.VideoWriter(f'{output}.avi', fourcc, 25, (w,h))
-        self.smooth_out = cv2.VideoWriter(f'{output}_smooth.avi', fourcc, 25, (w,h))
+        self.out = cv2.VideoWriter(f'{output}.avi', fourcc, 25, (frame_width, frame_height))
+        self.smooth_out = cv2.VideoWriter(f'{output}_smooth.avi', fourcc, 25, (frame_width, frame_height))
         self.horses = [None, None, None, None, None]
         self.outs = [None, None, None, None, None]
         self.count = 0
@@ -98,8 +95,8 @@ class VideoManager():
             cropped = cv2.resize(cropped,(frame_width,frame_height))
             # if self.show: show_frame(cropped)
             out.write(cropped)
-        self.smooth_out.write(smooth)
-        self.out.write(frame)
+        self.smooth_out.write(cv2.resize(smooth, (frame_width, frame_height)))
+        self.out.write(cv2.resize(frame, (frame_width, frame_height)))
         
     def close(self):
         self.bar.finish()
