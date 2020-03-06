@@ -56,9 +56,9 @@ manager = Manager(input, output, frames, skip, False, detector)
 print("Zeitpunnkt A",time.time())
 manager.initialize()
 if frames==0:
-    frames=int(manager.getFrameCount()-skip)
+    frames=int(manager.getFrameCount()-skip)-1
 print(frames)
-for i in range(frames-2):
+for i in range(frames-1):
     try:
         manager.update()
     except:
