@@ -56,7 +56,7 @@ manager.initialize()
 for i in range(frames-1):
     try:
         manager.update()
-    except Exception as e:
-        print(e)
+    except:
+        print('Exception!')
         break
 manager.video.close()
