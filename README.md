@@ -18,7 +18,7 @@ usage: horsinaround.py [-h] [--skip [SKIP]] [--single] [--multiple]
  - `--mode` is the horse detection mode. Can be one of `tinyyolo`, `yolo` and `background`
  - `input` is the input video file path
  - `output` is the path for the video output. The `.avi` extension will automatically be appended, so only the filename needs to be given here
- - `frames` is the amount of frames that should be processed
+ - `frames` is the amount of frames that should be processed. 0 to go to end of file
 
 
 ### Dependencies
@@ -43,9 +43,12 @@ usage: horsinaround.py [-h] [--skip [SKIP]] [--single] [--multiple]
 ### Aufbau
 
 #### cropper
+- takes a frame and gives back a cropped out part in the correct aspect ratio
+- 
 
 #### smoother
  - takes x,y,h and gives back smoothed versions of them
+ - uses the last 50 frames
 
 #### reader
  - read
