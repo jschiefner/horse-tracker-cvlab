@@ -127,3 +127,6 @@ class Manager():
             horse.draw(frame)
             horse.draw_smooth(smooth)
         self.video.write(raw, frame, smooth, self.horses)
+
+    def getFrameCount(self):
+        return self.video.getFrameCount()

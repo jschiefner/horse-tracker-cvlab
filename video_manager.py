@@ -35,9 +35,8 @@ class VideoManager():
         self.outs = [None, None, None, None, None]
         self.count = 0
         if max_frames==0:
-            max_frames=self.cap.get(cv2.CAP_PROP_FRAME_COUNT)-skip
+            max_frames=self.cap.get(cv2.CAP_PROP_FRAME_COUNT)-skip-1
         self.max_frames = max_frames
-
         if skip > 0: self.skip(skip)
         self.bar = Bar('Processing frames', max=max_frames)
         self.output = output
