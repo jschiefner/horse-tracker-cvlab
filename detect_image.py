@@ -15,7 +15,7 @@ def scale(frame):
 
 def draw(box, frame):
     left, top, right, bottom = box
-    cv2.rectangle(frame, (left, top), (right, bottom), red, )
+    cv2.rectangle(frame, (left, top), (right, bottom), red, 10)
 
 out_folder = 'out/abgabe'
 while True:
