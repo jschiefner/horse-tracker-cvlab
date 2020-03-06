@@ -71,15 +71,18 @@ class VideoManager():
         
     def getFPS(self):
         return self.cap.get(cv2.CAP_PROP_FPS)
-    
+
+    def getFrameCount(self):
+        return self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
+
     def read(self):
         self.bar.next()
         logger.info('')
         logger.info(f'{self.count+1}/{self.max_frames}')
         while True:
             ret, frame = self.cap.read()
-            self.count += 1
             if ret:
+                self.count += 1
                 return frame
 
                                 

@@ -2,6 +2,7 @@ import sys
 import argparse
 import warnings
 import logging
+import time
 # import box_detector
 
 logger = logging.getLogger('horse')
@@ -52,11 +53,16 @@ else:
     from detect_track_multiple import Manager
 
 manager = Manager(input, output, frames, skip, False, detector)
+print("Zeitpunnkt A",time.time())
 manager.initialize()
-for i in range(frames-1):
+if frames==0:
+    frames=int(manager.getFrameCount()-skip)
+print(frames)
+for i in range(frames-2):
     try:
         manager.update()
     except Exception as e:
         print(e)
         break
 manager.video.close()
+print("Zeitpunkt B",time.time())
